@@ -12,20 +12,20 @@ from jsonschema import Draft202012Validator, FormatChecker
 from yaml import YAMLError
 
 MANIFEST_KEY = "skillmeta.manifest"
-ALLOWED_FRONTMATTER_FIELDS = {
-    "name",
-    "description",
-    "license",
-    "compatibility",
-    "metadata",
-    "allowed-tools",
-}
-REQUIRED_FRONTMATTER_FIELDS = {
-    "name",
-    "description",
-    "license",
-    "compatibility",
-    "metadata",
+MANIFEST_SCHEMA_URI = (
+    "https://raw.githubusercontent.com/ayahohner/skillmeta/"
+    "v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
+)
+REDUNDANT_FRONTMATTER_FIELDS = {
+    "author",
+    "authors",
+    "createdWith",
+    "creators",
+    "extensions",
+    "repository",
+    "requirements",
+    "targets",
+    "version",
 }
 SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -48,7 +48,7 @@ def _issue(
 def _schema() -> dict[str, Any]:
     schema_resource = resources.files("skillmeta").joinpath(
         "schema",
-        "v0.1",
+        "v0.2",
         "skill.schema.json",
     )
     return json.loads(schema_resource.read_text(encoding="utf-8"))
@@ -104,14 +104,13 @@ def _validate_frontmatter(
     issues: list[Issue] = []
     skill_file = skill_dir / "SKILL.md"
 
-    for field in sorted(REQUIRED_FRONTMATTER_FIELDS - frontmatter.keys()):
+    for field in sorted(frontmatter.keys() & REDUNDANT_FRONTMATTER_FIELDS):
         issues.append(
-            _issue("error", str(skill_file), f"missing required frontmatter field: {field}")
-        )
-
-    for field in sorted(frontmatter.keys() - ALLOWED_FRONTMATTER_FIELDS):
-        issues.append(
-            _issue("warning", str(skill_file), f"unknown frontmatter field: {field}")
+            _issue(
+                "warning",
+                f"{skill_file}:{field}",
+                f"{field} duplicates metadata owned by skill.json",
+            )
         )
 
     name = frontmatter.get("name")
@@ -136,51 +135,15 @@ def _validate_frontmatter(
             )
         )
 
-    description = frontmatter.get("description")
-    if not isinstance(description, str) or not description.strip():
-        issues.append(
-            _issue("error", f"{skill_file}:description", "description must be a non-empty string")
-        )
-    elif len(description) > 1024:
-        issues.append(
-            _issue(
-                "error",
-                f"{skill_file}:description",
-                "description must be at most 1024 characters",
-            )
-        )
-
     license_value = frontmatter.get("license")
-    if not isinstance(license_value, str) or not license_value.strip():
-        issues.append(
-            _issue("error", f"{skill_file}:license", "license must be a non-empty string")
-        )
-
-    compatibility = frontmatter.get("compatibility")
-    if not isinstance(compatibility, str) or not compatibility.strip():
+    if "license" in frontmatter and (
+        not isinstance(license_value, str) or not license_value.strip()
+    ):
         issues.append(
             _issue(
                 "error",
-                f"{skill_file}:compatibility",
-                "compatibility must be a non-empty string",
-            )
-        )
-    elif len(compatibility) > 500:
-        issues.append(
-            _issue(
-                "error",
-                f"{skill_file}:compatibility",
-                "compatibility must be at most 500 characters",
-            )
-        )
-
-    allowed_tools = frontmatter.get("allowed-tools")
-    if allowed_tools is not None and not isinstance(allowed_tools, str):
-        issues.append(
-            _issue(
-                "error",
-                f"{skill_file}:allowed-tools",
-                "allowed-tools must be a space-separated string",
+                f"{skill_file}:license",
+                "license must be a non-empty string when declared",
             )
         )
 
@@ -191,16 +154,14 @@ def _validate_frontmatter(
         )
         return issues
 
-    for key, value in metadata.items():
-        if not isinstance(key, str) or not isinstance(value, str):
-            issues.append(
-                _issue(
-                    "error",
-                    f"{skill_file}:metadata",
-                    "metadata keys and values must be strings",
-                )
+    for field in sorted(metadata.keys() & REDUNDANT_FRONTMATTER_FIELDS):
+        issues.append(
+            _issue(
+                "warning",
+                f"{skill_file}:metadata.{field}",
+                f"metadata.{field} duplicates metadata owned by skill.json",
             )
-            break
+        )
 
     manifest_reference = metadata.get(MANIFEST_KEY)
     if not isinstance(manifest_reference, str) or not manifest_reference.strip():
@@ -231,6 +192,10 @@ def _manifest_path(
         return None, [
             _issue("error", location, "manifest reference must be a local relative path")
         ]
+    if reference_path.suffix.lower() != ".json":
+        return None, [
+            _issue("error", location, "manifest reference must identify a JSON file")
+        ]
 
     skill_root = skill_dir.resolve()
     resolved = (skill_root / reference_path).resolve()
@@ -242,7 +207,12 @@ def _manifest_path(
         return None, [
             _issue("error", location, f"manifest does not exist: {reference}")
         ]
-    return resolved, []
+    issues: list[Issue] = []
+    if reference_path.name != "skill.json":
+        issues.append(
+            _issue("warning", location, "manifest should be named skill.json")
+        )
+    return resolved, issues
 
 
 def _load_manifest(manifest_path: Path) -> tuple[dict[str, Any] | None, list[Issue]]:
@@ -276,6 +246,16 @@ def _validate_manifest(
     manifest: dict[str, Any],
     manifest_path: Path,
 ) -> list[Issue]:
+    manifest_schema = manifest.get("manifestSchema")
+    if manifest_schema != MANIFEST_SCHEMA_URI:
+        return [
+            _issue(
+                "error",
+                f"{manifest_path}.manifestSchema",
+                f"unsupported manifestSchema: {manifest_schema!r}",
+            )
+        ]
+
     validator = Draft202012Validator(_schema(), format_checker=FormatChecker())
     errors = sorted(validator.iter_errors(manifest), key=lambda error: list(error.absolute_path))
     return [
@@ -292,19 +272,57 @@ def _validate_cross_file(
     frontmatter: dict[str, Any],
     manifest: dict[str, Any],
     manifest_path: Path,
+    skill_file: Path,
 ) -> list[Issue]:
     issues: list[Issue] = []
-    for field in ("name", "license"):
-        frontmatter_value = frontmatter.get(field)
-        manifest_value = manifest.get(field)
-        if frontmatter_value != manifest_value:
-            issues.append(
-                _issue(
-                    "error",
-                    f"{manifest_path}.{field}",
-                    f"{field} must match SKILL.md ({frontmatter_value!r})",
+    frontmatter_name = frontmatter.get("name")
+    if manifest.get("name") != frontmatter_name:
+        issues.append(
+            _issue(
+                "error",
+                f"{manifest_path}.name",
+                f"name must match SKILL.md ({frontmatter_name!r})",
+            )
+        )
+
+    frontmatter_license = frontmatter.get("license")
+    if (
+        isinstance(frontmatter_license, str)
+        and frontmatter_license.strip()
+        and manifest.get("license") != frontmatter_license
+    ):
+        issues.append(
+            _issue(
+                "error",
+                f"{manifest_path}.license",
+                f"license must match SKILL.md ({frontmatter_license!r})",
+            )
+        )
+
+    manifest_version = manifest.get("version")
+    if isinstance(manifest_version, str):
+        version_locations: list[tuple[str, Any]] = []
+        if "version" in frontmatter:
+            version_locations.append(
+                (f"{skill_file}:version", frontmatter["version"])
+            )
+        metadata = frontmatter.get("metadata")
+        if isinstance(metadata, dict) and "version" in metadata:
+            version_locations.append(
+                (
+                    f"{skill_file}:metadata.version",
+                    metadata["version"],
                 )
             )
+        for location, value in version_locations:
+            if value != manifest_version:
+                issues.append(
+                    _issue(
+                        "error",
+                        location,
+                        f"version must match skill.json ({manifest_version!r})",
+                    )
+                )
     return issues
 
 
@@ -332,5 +350,8 @@ def validate_skill(path: str | Path) -> list[Issue]:
         return issues
 
     issues.extend(_validate_manifest(manifest, manifest_path))
-    issues.extend(_validate_cross_file(frontmatter, manifest, manifest_path))
+    if manifest.get("manifestSchema") == MANIFEST_SCHEMA_URI:
+        issues.extend(
+            _validate_cross_file(frontmatter, manifest, manifest_path, skill_file)
+        )
     return issues

@@ -16,8 +16,8 @@ python3 -m venv .venv
 
 ## Schema changes
 
-- Add fields only when they change resolution, compatibility, provenance, or
-  validation behavior.
+- Add core fields only when they change resolution, applicability, provenance,
+  or validation behavior. Use a namespaced extension for experimental data.
 - Do not add harness-specific behavior to the universal core.
 - Published schema URIs are immutable.
 - Any change to accepted documents or field meaning requires a new versioned
