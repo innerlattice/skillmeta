@@ -1,6 +1,6 @@
 # Skillmeta Specification
 
-- Version: `0.2.0`
+- Version: `0.3.0`
 - Status: Experimental
 - Profile of: [Agent Skills](https://agentskills.io/specification)
 
@@ -28,6 +28,10 @@ permission system, execution protocol, or update process.
 - **subject skill**: the skill package described by a particular manifest.
 - **consumer**: an agent, harness, validator, catalog, or other software that
   reads a manifest.
+- **creator**: a person, organization, or software agent responsible for
+  producing the subject skill.
+- **creation context**: a harness and/or model configuration associated with a
+  particular creator's contribution.
 - **harness**: the product that loads a model, skills, and tools to operate an
   agent.
 - **target**: an applicability constraint used to decide whether the subject
@@ -74,10 +78,10 @@ Skillmeta adds no other frontmatter requirements. In particular, the upstream
 
 ## 4. Manifest format
 
-A v0.2 manifest MUST be UTF-8 JSON and MUST validate against:
+A v0.3 manifest MUST be UTF-8 JSON and MUST validate against:
 
 ```text
-https://raw.githubusercontent.com/ayahohner/skillmeta/v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json
+https://raw.githubusercontent.com/ayahohner/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json
 ```
 
 The `version` field identifies the subject skill release and MUST follow
@@ -89,7 +93,7 @@ Semantic Versioning 2.0.0.
 | `name` | Canonical Agent Skills name |
 | `version` | Semantic version of the subject skill release |
 | `license` | SPDX expression, license identifier, or bundled license reference |
-| `creators` | One or more SPDX 2.3 Creator strings |
+| `creators` | One or more typed creator agents and their provenance |
 | `targets` | Supported environments or project contexts |
 | `requirements` | Resources required for the skill to work |
 
@@ -97,60 +101,92 @@ Unknown top-level fields are invalid. Extension data belongs in `extensions`.
 
 ## 5. Creators and creation provenance
 
-Each `creators` entry MUST use an SPDX 2.3 Creator form:
+A creator is an agent that bears responsibility for producing the subject
+skill. The creator model uses the W3C PROV agent categories `Person`,
+`Organization`, and `SoftwareAgent`; its person and organization properties
+follow the common CodeMeta and Citation File Format conventions where they fit
+the Skillmeta contract. The `createdUsing` name follows SPDX 3 CreationInfo,
+while Skillmeta nests the relationship so each context stays attached to the
+creator it describes.
 
-- `Person: <name>` with optional contact information;
-- `Organization: <name>` with optional contact information;
-- `Tool: <toolidentifier> - <version>`.
+Each creator MUST be an object with `type` and `name`. Creator order is the
+display and credit order.
 
-SPDX 2.3 does not standardize the contents of `toolidentifier`. Skillmeta
-defines it as the stable, lowercase, publisher-scoped product identifier
-`<publisher>/<product>`. Use the publisher's product identity rather than an
-executable filename, file extension, installation path, or operating-system
-package name. Platform packaging such as an application bundle or executable
-suffix does not create a different identifier unless the publisher treats it
-as a distinct product with a separate version lineage.
+| Field | Person | Organization | SoftwareAgent |
+| --- | --- | --- | --- |
+| `type` | REQUIRED: `Person` | REQUIRED: `Organization` | REQUIRED: `SoftwareAgent` |
+| `name` | REQUIRED | REQUIRED | REQUIRED |
+| `id` | Optional absolute URI | Optional absolute URI | REQUIRED `<publisher>/<product>` ID |
+| `version` | Prohibited | Prohibited | REQUIRED product version |
+| `email` | Optional | Optional | Prohibited |
+| `url` | Optional absolute URI | Optional absolute URI | Optional absolute URI |
+| `affiliations` | Optional list | Prohibited | Prohibited |
+| `createdUsing` | Optional list | Optional list | Optional list |
 
-Skillmeta requires a version in every Tool entry. Use a version reported by
-the product's version command, About screen, or authoritative publisher
-website. If no reliable version is available, omit the Tool entry rather than
-inventing a value.
+A person or organization `id` SHOULD be a stable public identity URI when one
+is available, such as an ORCID, ROR, or authoritative profile. Contact fields
+MUST NOT contain private information without the subject's consent.
 
-Example:
+A SoftwareAgent `id` is the stable, lowercase, publisher-scoped product
+identifier `<publisher>/<product>`. It names the publisher's product, not an
+executable filename, application bundle, installation path, or package-manager
+alias. Its version MUST come from the product's version command, About screen,
+or authoritative publisher website; consumers MUST NOT invent a missing
+version.
+
+### 5.1 Affiliations
+
+Each `affiliations` item is an organization object with a REQUIRED `name` and
+optional `id`, `email`, and `url`. `id` and `url` MUST be absolute URIs.
+
+An affiliation relates an organization to a person's contribution to the
+subject skill; it does not assert a permanent relationship or make that
+organization a separate creator. An organization that should receive direct
+credit MUST also appear as its own `Organization` creator.
+
+### 5.2 Creation contexts
+
+`createdUsing` is nested under the creator whose contribution it describes. It
+MUST be a non-empty list of creation contexts; the same creator MAY declare
+more than one context. A context MUST contain at least one of `harness` or
+`model`.
 
 ```json
 {
-  "creators": [
-    "Person: Aya Hohner",
-    "Tool: openai/codex - 0.146.0-alpha.9.2"
+  "type": "Person",
+  "name": "Aya Hohner",
+  "id": "https://github.com/ayahohner",
+  "createdUsing": [
+    {
+      "harness": {
+        "id": "openai/codex",
+        "version": "0.146.0-alpha.9.2"
+      },
+      "model": {
+        "id": "openai/gpt-5.6-sol",
+        "configuration": {
+          "reasoningEffort": "high"
+        }
+      }
+    }
   ]
 }
 ```
 
-The optional `createdWith` object records structured agent configuration:
+A harness requires a stable `<publisher>/<product>` `id` and a non-empty
+`version`. A model requires a stable `id`; its optional `configuration` object
+MAY contain provider-defined string, number, or boolean values.
 
-```json
-{
-  "createdWith": {
-    "harness": {
-      "id": "openai/codex",
-      "version": "0.146.0-alpha.9.2"
-    },
-    "model": {
-      "id": "openai/gpt-5.6-sol",
-      "configuration": {
-        "reasoningEffort": "high"
-      }
-    }
-  }
-}
-```
+`model.configuration.reasoningEffort` SHOULD be included when the model uses
+such a setting and the harness exposes it. It MAY be omitted when the setting
+is inapplicable, unavailable, or withheld for privacy or security. Its
+vocabulary is provider-defined; values are not necessarily comparable between
+models or providers.
 
-`createdWith.model.configuration.reasoningEffort` SHOULD be included when the
-model uses such a setting and the harness exposes it. It MAY be omitted when
-the setting is inapplicable, unavailable, or withheld for privacy or security.
-Its vocabulary is provider-defined; values are not necessarily comparable
-between models or providers.
+Use a `Person` or `Organization` with `createdUsing` when that party remains
+responsible for agent-assisted work. Use `SoftwareAgent` when the software
+system itself is directly credited. A SoftwareAgent MAY also declare
+`createdUsing`, for example when a custom agent ran inside another harness.
 
 ## 6. Targets
 
@@ -206,8 +242,8 @@ model or future model version.
 }
 ```
 
-Harness IDs use the same stable `<publisher>/<product>` form as Tool creator
-identifiers. `purl` SHOULD be supplied when the harness has a registered
+Harness IDs use the same stable `<publisher>/<product>` form as SoftwareAgent
+creator identifiers. `purl` SHOULD be supplied when the harness has a registered
 package identity. An optional model narrows the harness target further.
 
 ### 6.3 Package target
@@ -262,9 +298,11 @@ corresponding package requirement as well.
 Examples:
 
 ```json
-{"kind": "package", "purl": "pkg:pypi/pytest", "versionRange": "vers:pypi/>=8.0.0"}
-{"kind": "runtime", "id": "python", "versionRange": "vers:semver/>=3.10.0"}
-{"kind": "executable", "id": "git"}
+[
+  {"kind": "package", "purl": "pkg:pypi/pytest", "versionRange": "vers:pypi/>=8.0.0"},
+  {"kind": "runtime", "id": "python", "versionRange": "vers:semver/>=3.10.0"},
+  {"kind": "executable", "id": "git"}
+]
 ```
 
 Operating-system applicability belongs in `targets`. Experimental capability
@@ -395,8 +433,9 @@ A conforming Skillmeta validator MUST:
 7. require a duplicated `version` to match the manifest version.
 
 Redundancy warnings apply to `version`, `author`, `authors`, `creators`,
-`createdWith`, `repository`, `targets`, `requirements`, and `extensions` when
-they appear either at the top level or inside the frontmatter `metadata` map.
+`createdWith`, `createdUsing`, `repository`, `targets`, `requirements`, and
+`extensions` when they appear either at the top level or inside the
+frontmatter `metadata` map.
 The intentional `name`, optional `license`, and manifest pointer are not
 redundancy warnings. Other frontmatter fields are outside Skillmeta validation
 and MUST NOT produce unknown-field warnings.
@@ -414,8 +453,11 @@ an unknown `manifestSchema` MUST report it as unsupported.
 ## References
 
 - [Agent Skills specification](https://agentskills.io/specification)
-- [SPDX 2.3 Creator](https://spdx.github.io/spdx-spec/v2.3/document-creation-information/)
-- [SPDX 2.3 agent and tool identifier syntax](https://spdx.github.io/spdx-spec/v2.3/RDF-object-model-and-identifier-syntax/)
+- [W3C PROV-O](https://www.w3.org/TR/prov-o/)
+- [SPDX 3.0.1 CreationInfo](https://spdx.github.io/spdx-spec/v3.0.1/model/Core/Classes/CreationInfo/)
+- [CodeMeta terms](https://codemeta.github.io/terms/)
+- [Citation File Format schema guide](https://github.com/citation-file-format/citation-file-format/blob/main/schema-guide.md)
+- [SPDX license expressions](https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/)
 - [Package URL / ECMA-427](https://ecma-international.org/publications-and-standards/standards/ecma-427/)
 - [VERS](https://www.packageurl.org/docs/vers/introduction)
 - [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12)

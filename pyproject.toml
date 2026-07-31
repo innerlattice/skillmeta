@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "skillmeta"
-version = "0.2.0"
+version = "0.3.0"
 description = "Portable skill.json manifests for Agent Skills"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -35,6 +35,7 @@ skillmeta = "skillmeta.cli:main"
 
 [project.urls]
 Repository = "https://github.com/ayahohner/skillmeta"
+Documentation = "https://github.com/ayahohner/skillmeta/blob/main/docs/manifest-guide.md"
 Specification = "https://github.com/ayahohner/skillmeta/blob/main/SPECIFICATION.md"
 
 [tool.hatch.build.targets.wheel]

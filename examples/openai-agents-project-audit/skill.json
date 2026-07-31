@@ -1,24 +1,29 @@
 {
-  "manifestSchema": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json",
+  "manifestSchema": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json",
   "name": "openai-agents-project-audit",
   "version": "1.0.0",
   "license": "MIT",
   "creators": [
-    "Person: Aya Hohner",
-    "Tool: openai/codex - 0.146.0-alpha.9.2"
-  ],
-  "createdWith": {
-    "harness": {
-      "id": "openai/codex",
-      "version": "0.146.0-alpha.9.2"
-    },
-    "model": {
-      "id": "openai/gpt-5.6-sol",
-      "configuration": {
-        "reasoningEffort": "high"
-      }
+    {
+      "type": "Person",
+      "name": "Aya Hohner",
+      "id": "https://github.com/ayahohner",
+      "createdUsing": [
+        {
+          "harness": {
+            "id": "openai/codex",
+            "version": "0.146.0-alpha.9.2"
+          },
+          "model": {
+            "id": "openai/gpt-5.6-sol",
+            "configuration": {
+              "reasoningEffort": "high"
+            }
+          }
+        }
+      ]
     }
-  },
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ayahohner/skillmeta.git",

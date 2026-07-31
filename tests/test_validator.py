@@ -179,25 +179,149 @@ def test_extension_key_must_be_an_absolute_uri(tmp_path: Path) -> None:
     assert any("capabilities" in message for _, message in _messages(skill_dir))
 
 
-def test_tool_creator_requires_scoped_product_and_version(tmp_path: Path) -> None:
+def test_scalar_creator_is_invalid_in_v03(tmp_path: Path) -> None:
     skill_dir = _copy_example(tmp_path)
     manifest = _manifest(skill_dir)
-    manifest["creators"][-1] = "Tool: codex"
+    manifest["creators"] = ["Person: Example Maintainer"]
     _write_manifest(skill_dir, manifest)
 
     assert any(
-        "is not valid under any of the given schemas" in message
+        "is not of type 'object'" in message
         for _, message in _messages(skill_dir)
     )
 
 
-def test_created_with_harness_requires_version(tmp_path: Path) -> None:
+def test_multiple_creator_affiliations_and_creation_contexts_are_valid(
+    tmp_path: Path,
+) -> None:
     skill_dir = _copy_example(tmp_path)
     manifest = _manifest(skill_dir)
-    del manifest["createdWith"]["harness"]["version"]
+    manifest["creators"] = [
+        {
+            "type": "Person",
+            "name": "Maya Chen",
+            "id": "https://example.org/people/maya-chen",
+            "affiliations": [
+                {
+                    "name": "Northstar Research",
+                    "id": "https://example.org/organizations/northstar-research",
+                }
+            ],
+            "createdUsing": [
+                {
+                    "harness": {"id": "openai/codex", "version": "1.2.0"},
+                    "model": {"id": "openai/gpt-5.6-sol"},
+                },
+                {"model": {"id": "openai/gpt-5.6-terra"}},
+            ],
+        },
+        {
+            "type": "Person",
+            "name": "Daniel Okafor",
+            "affiliations": [{"name": "Lantern Systems"}],
+            "createdUsing": [
+                {
+                    "harness": {"id": "google/gemini-cli", "version": "0.9.0"},
+                    "model": {"id": "google/gemini-2.5-pro"},
+                }
+            ],
+        },
+    ]
+    _write_manifest(skill_dir, manifest)
+
+    assert validate_skill(skill_dir) == []
+
+
+def test_software_agent_creator_is_valid(tmp_path: Path) -> None:
+    skill_dir = _copy_example(tmp_path)
+    manifest = _manifest(skill_dir)
+    manifest["creators"] = [
+        {
+            "type": "SoftwareAgent",
+            "name": "Project Auditor",
+            "id": "example/project-auditor",
+            "version": "1.0.0",
+            "createdUsing": [
+                {
+                    "harness": {"id": "openai/codex", "version": "1.2.0"},
+                    "model": {"id": "openai/gpt-5.6-sol"},
+                }
+            ],
+        }
+    ]
+    _write_manifest(skill_dir, manifest)
+
+    assert validate_skill(skill_dir) == []
+
+
+def test_creator_fields_are_scoped_to_creator_type(tmp_path: Path) -> None:
+    invalid_creators = {
+        "person-version": {
+            "type": "Person",
+            "name": "Example Person",
+            "version": "1.0.0",
+        },
+        "organization-affiliation": {
+            "type": "Organization",
+            "name": "Example Organization",
+            "affiliations": [{"name": "Another Organization"}],
+        },
+        "software-agent-email": {
+            "type": "SoftwareAgent",
+            "name": "Example Agent",
+            "id": "example/agent",
+            "version": "1.0.0",
+            "email": "agent@example.org",
+        },
+    }
+
+    for directory_name, creator in invalid_creators.items():
+        case_root = tmp_path / directory_name
+        case_root.mkdir()
+        skill_dir = _copy_example(case_root)
+        manifest = _manifest(skill_dir)
+        manifest["creators"] = [creator]
+        _write_manifest(skill_dir, manifest)
+
+        assert validate_skill(skill_dir)
+
+
+def test_software_agent_creator_requires_scoped_id_and_version(tmp_path: Path) -> None:
+    skill_dir = _copy_example(tmp_path)
+    manifest = _manifest(skill_dir)
+    manifest["creators"] = [
+        {
+            "type": "SoftwareAgent",
+            "name": "Codex",
+            "id": "codex",
+        }
+    ]
+    _write_manifest(skill_dir, manifest)
+
+    messages = _messages(skill_dir)
+    assert any("'version' is a required property" in message for _, message in messages)
+    assert any("does not match" in message for _, message in messages)
+
+
+def test_created_using_harness_requires_version(tmp_path: Path) -> None:
+    skill_dir = _copy_example(tmp_path)
+    manifest = _manifest(skill_dir)
+    del manifest["creators"][0]["createdUsing"][0]["harness"]["version"]
     _write_manifest(skill_dir, manifest)
 
     assert any("'version' is a required property" in message for _, message in _messages(skill_dir))
+
+
+def test_global_created_with_is_invalid_in_v03(tmp_path: Path) -> None:
+    skill_dir = _copy_example(tmp_path)
+    manifest = _manifest(skill_dir)
+    manifest["createdWith"] = manifest["creators"][0]["createdUsing"][0]
+    _write_manifest(skill_dir, manifest)
+
+    assert any(
+        "Additional properties are not allowed" in message
+        for _, message in _messages(skill_dir)
+    )
 
 
 def test_package_purl_may_use_qualifiers_and_subpath(tmp_path: Path) -> None:
@@ -312,6 +436,40 @@ def test_nonstandard_manifest_name_warns(tmp_path: Path) -> None:
     )
 
     assert _messages(skill_dir) == [("warning", "manifest should be named skill.json")]
+
+
+def test_validator_accepts_published_v01_and_v02_schemas(tmp_path: Path) -> None:
+    schema_uris = {
+        "v01": (
+            "https://raw.githubusercontent.com/ayahohner/skillmeta/"
+            "v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json"
+        ),
+        "v02": (
+            "https://raw.githubusercontent.com/ayahohner/skillmeta/"
+            "v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
+        ),
+    }
+
+    for directory_name, schema_uri in schema_uris.items():
+        case_root = tmp_path / directory_name
+        case_root.mkdir()
+        skill_dir = _copy_example(case_root)
+        manifest = {
+            "manifestSchema": schema_uri,
+            "name": skill_dir.name,
+            "version": "1.0.0",
+            "license": "MIT",
+            "creators": ["Person: Example Maintainer"],
+            "createdWith": {
+                "harness": {"id": "openai/codex", "version": "1.2.0"},
+                "model": {"id": "openai/gpt-5.6-sol"},
+            },
+            "targets": [{"kind": "universal"}],
+            "requirements": [],
+        }
+        _write_manifest(skill_dir, manifest)
+
+        assert validate_skill(skill_dir) == []
 
 
 def test_unknown_manifest_schema_is_reported_as_unsupported(tmp_path: Path) -> None:

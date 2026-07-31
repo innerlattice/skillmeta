@@ -1,7 +1,7 @@
 # Skillmeta
 
 [![Validate](https://github.com/ayahohner/skillmeta/actions/workflows/validate.yml/badge.svg)](https://github.com/ayahohner/skillmeta/actions/workflows/validate.yml)
-[![Spec v0.2.0](https://img.shields.io/badge/spec-v0.2.0-7c3aed)](SPECIFICATION.md)
+[![Spec v0.3.0](https://img.shields.io/badge/spec-v0.3.0-7c3aed)](SPECIFICATION.md)
 [![Agent Skills profile](https://img.shields.io/badge/Agent%20Skills-profile-0ea5e9)](https://agentskills.io/specification)
 [![Status: experimental](https://img.shields.io/badge/status-experimental-f59e0b)](#status-and-scope)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
@@ -24,6 +24,7 @@ no registry or particular agent harness is required.
 - [Why Skillmeta?](#why-skillmeta)
 - [Quick start](#quick-start)
 - [Targets and dependencies](#targets-and-dependencies)
+- [Complete manifest guide](docs/manifest-guide.md)
 - [Agent quickstart](#agent-quickstart)
 - [Migration](#migration)
 - [Status and scope](#status-and-scope)
@@ -54,7 +55,7 @@ The manifest gives each concern an explicit home:
 | Concern | Skillmeta field |
 | --- | --- |
 | Release identity and license | `name`, `version`, `license` |
-| Human and agent provenance | `creators`, `createdWith`, `repository` |
+| Human and agent provenance | `creators`, `createdUsing`, `repository` |
 | Applicability | `targets` |
 | Packages, runtimes, executables, and skills needed | `requirements` |
 | Experimental or domain-specific data | `extensions` |
@@ -104,26 +105,31 @@ Create `skill.json` beside `SKILL.md`:
 
 ```json
 {
-  "manifestSchema": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json",
+  "manifestSchema": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json",
   "name": "agent-project-audit",
   "version": "1.0.0",
   "license": "MIT",
   "creators": [
-    "Person: Aya Hohner",
-    "Tool: openai/codex - 0.146.0-alpha.9.2"
-  ],
-  "createdWith": {
-    "harness": {
-      "id": "openai/codex",
-      "version": "0.146.0-alpha.9.2"
-    },
-    "model": {
-      "id": "openai/gpt-5.6-sol",
-      "configuration": {
-        "reasoningEffort": "high"
-      }
+    {
+      "type": "Person",
+      "name": "Aya Hohner",
+      "id": "https://github.com/ayahohner",
+      "createdUsing": [
+        {
+          "harness": {
+            "id": "openai/codex",
+            "version": "0.146.0-alpha.9.2"
+          },
+          "model": {
+            "id": "openai/gpt-5.6-sol",
+            "configuration": {
+              "reasoningEffort": "high"
+            }
+          }
+        }
+      ]
     }
-  },
+  ],
   "targets": [
     {
       "kind": "package",
@@ -161,8 +167,8 @@ Create `skill.json` beside `SKILL.md`:
 In plain English: this is version 1.0.0 of a skill for projects using the
 OpenAI Agents SDK. It works with any harness or operating system because those
 target kinds are omitted. It needs Python, pytest, and one other skill pinned
-to a specific Git commit. The creator fields record both human and agent
-provenance.
+to a specific Git commit. The creator record keeps the human identity and the
+agent configuration used for that contribution together.
 
 For a larger working example, see
 [`examples/openai-agents-project-audit`](examples/openai-agents-project-audit).
@@ -173,7 +179,7 @@ The reference CLI requires Python 3.10 or newer:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install "git+https://github.com/ayahohner/skillmeta.git@v0.2.0"
+.venv/bin/python -m pip install "git+https://github.com/ayahohner/skillmeta.git@v0.3.0"
 .venv/bin/skillmeta validate ./agent-project-audit --warnings-as-errors
 ```
 
@@ -213,12 +219,16 @@ different kinds are combined with AND, and an omitted kind means any value of
 that kind is supported. Use `{"kind": "universal"}` alone when the core skill
 has no target restrictions.
 
+The [manifest guide](docs/manifest-guide.md) lists every target, requirement,
+creator, repository, and extension field with examples and matching rules.
+
 ## Agent quickstart
 
 If you are an agent adding Skillmeta to a skill:
 
-1. Read the skill's `SKILL.md` and the [v0.2 specification](SPECIFICATION.md)
-   before changing either file.
+1. Read the skill's `SKILL.md` and the [manifest guide](docs/manifest-guide.md)
+   before changing either file; use the [v0.3 specification](SPECIFICATION.md)
+   for normative details.
 2. Create `skill.json` in the skill root and link it with
    `metadata.skillmeta.manifest`.
 3. Copy the canonical name, declare the license, and keep it equal to the
@@ -229,9 +239,9 @@ If you are an agent adding Skillmeta to a skill:
 5. Record provenance you can verify, then run `skillmeta validate` with
    `--warnings-as-errors`.
 
-Do not guess creator versions, invent compatibility restrictions, follow a
-moving branch as a dependency, or treat a requirement as authorization to
-change the environment.
+Do not guess software-agent or harness versions, invent compatibility
+restrictions, follow a moving branch as a dependency, or treat a requirement
+as authorization to change the environment.
 
 ## Migration
 
@@ -243,27 +253,24 @@ creators, targets, and direct requirements. If the skill has no real target
 restriction, use the universal target rather than manufacturing a
 compatibility statement.
 
-### From Skillmeta v0.1
+### From Skillmeta v0.1 or v0.2
 
-Update the schema URI, then apply these v0.2 changes:
+Update the schema URI and use typed creator objects. Each creator can now carry
+its own affiliations and `createdUsing` list; the old global `createdWith`
+field has been removed. When an old global context could belong to several
+creators, assign it explicitly rather than guessing.
 
-| v0.1 pattern | v0.2 replacement |
-| --- | --- |
-| Unscoped Tool creator | `Tool: <publisher>/<product> - <version>` using the publisher's product identity |
-| Version embedded in a PURL | Versionless PURL plus an exact VERS value |
-| `command` requirement | `executable` requirement |
-| Operating system or capability requirement | Operating-system target or a namespaced extension |
-| Required frontmatter `compatibility` summary | Optional upstream field; keep it only when it adds useful human context |
+For v0.1 manifests, also replace `command` requirements with `executable`,
+move operating-system applicability into targets, keep PURLs versionless, and
+put version policies in VERS. The [migration guide](docs/manifest-guide.md#migrate-from-v02)
+shows the v0.2-to-v0.3 transformation.
 
-`createdWith.harness` now requires a version. If `version` is duplicated in
-frontmatter, it must match `skill.json`; creator and dependency metadata in
-frontmatter produce redundancy warnings.
-
-Published v0.1 manifests remain valid against their immutable v0.1 schema.
+Published v0.1 and v0.2 manifests remain valid against their immutable
+schemas, and the current validator recognizes both versions.
 
 ## Status and scope
 
-Skillmeta v0.2.0 is experimental. It is a companion profile, not part of the
+Skillmeta v0.3.0 is experimental. It is a companion profile, not part of the
 canonical Agent Skills specification.
 
 The project defines a manifest and a Python reference validator. It does not
@@ -271,8 +278,9 @@ define a registry, installer, dependency solver, lockfile, permission system,
 or runtime invocation protocol. Those systems can consume Skillmeta without
 being prescribed by it.
 
-Read the normative [specification](SPECIFICATION.md), inspect the
-[v0.2 JSON Schema](src/skillmeta/schema/v0.2/skill.schema.json), or see
+Read the [manifest guide](docs/manifest-guide.md), consult the normative
+[specification](SPECIFICATION.md), inspect the
+[v0.3 JSON Schema](src/skillmeta/schema/v0.3/skill.schema.json), or see
 [CONTRIBUTING.md](CONTRIBUTING.md) to help refine the format.
 
 ## License

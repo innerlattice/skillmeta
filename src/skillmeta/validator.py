@@ -14,12 +14,24 @@ from yaml import YAMLError
 MANIFEST_KEY = "skillmeta.manifest"
 MANIFEST_SCHEMA_URI = (
     "https://raw.githubusercontent.com/ayahohner/skillmeta/"
-    "v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
+    "v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json"
 )
+MANIFEST_SCHEMA_URIS = {
+    (
+        "https://raw.githubusercontent.com/ayahohner/skillmeta/"
+        "v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json"
+    ): "v0.1",
+    (
+        "https://raw.githubusercontent.com/ayahohner/skillmeta/"
+        "v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
+    ): "v0.2",
+    MANIFEST_SCHEMA_URI: "v0.3",
+}
 REDUNDANT_FRONTMATTER_FIELDS = {
     "author",
     "authors",
     "createdWith",
+    "createdUsing",
     "creators",
     "extensions",
     "repository",
@@ -45,10 +57,11 @@ def _issue(
     return Issue(severity=severity, location=location, message=message)
 
 
-def _schema() -> dict[str, Any]:
+def _schema(manifest_schema: str) -> dict[str, Any]:
+    schema_version = MANIFEST_SCHEMA_URIS[manifest_schema]
     schema_resource = resources.files("skillmeta").joinpath(
         "schema",
-        "v0.2",
+        schema_version,
         "skill.schema.json",
     )
     return json.loads(schema_resource.read_text(encoding="utf-8"))
@@ -247,7 +260,7 @@ def _validate_manifest(
     manifest_path: Path,
 ) -> list[Issue]:
     manifest_schema = manifest.get("manifestSchema")
-    if manifest_schema != MANIFEST_SCHEMA_URI:
+    if manifest_schema not in MANIFEST_SCHEMA_URIS:
         return [
             _issue(
                 "error",
@@ -256,7 +269,10 @@ def _validate_manifest(
             )
         ]
 
-    validator = Draft202012Validator(_schema(), format_checker=FormatChecker())
+    validator = Draft202012Validator(
+        _schema(manifest_schema),
+        format_checker=FormatChecker(),
+    )
     errors = sorted(validator.iter_errors(manifest), key=lambda error: list(error.absolute_path))
     return [
         _issue(
@@ -350,7 +366,7 @@ def validate_skill(path: str | Path) -> list[Issue]:
         return issues
 
     issues.extend(_validate_manifest(manifest, manifest_path))
-    if manifest.get("manifestSchema") == MANIFEST_SCHEMA_URI:
+    if manifest.get("manifestSchema") in MANIFEST_SCHEMA_URIS:
         issues.extend(
             _validate_cross_file(frontmatter, manifest, manifest_path, skill_file)
         )
