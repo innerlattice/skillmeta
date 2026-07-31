@@ -1,0 +1,493 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json",
+  "title": "Skillmeta skill manifest",
+  "description": "Portable machine-readable metadata for an Agent Skill.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifestSchema",
+    "name",
+    "version",
+    "license",
+    "creators",
+    "targets",
+    "requirements"
+  ],
+  "properties": {
+    "manifestSchema": {
+      "const": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json"
+    },
+    "name": {
+      "$ref": "#/$defs/skillName"
+    },
+    "version": {
+      "$ref": "#/$defs/semanticVersion"
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "description": "SPDX license expression, license identifier, or declared license reference."
+    },
+    "creators": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/creator"
+      }
+    },
+    "createdWith": {
+      "$ref": "#/$defs/createdWith"
+    },
+    "repository": {
+      "$ref": "#/$defs/repository"
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/target"
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/requirement"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "targets": {
+            "contains": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "universal"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "targets": {
+            "maxItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "skillName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "creator": {
+      "type": "string",
+      "pattern": "^(Person|Organization|Tool): .+$"
+    },
+    "stableId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:[._/-][a-z0-9]+)*$"
+    },
+    "purl": {
+      "type": "string",
+      "pattern": "^pkg:[a-z][a-z0-9.+-]*/[^\\s@?#]+(?:/[^\\s@?#]+)*(?:@[^\\s?#]+)?(?:\\?[^\\s#]+)?(?:#[^\\s]+)?$",
+      "description": "Package URL."
+    },
+    "versionlessPurl": {
+      "type": "string",
+      "pattern": "^pkg:[a-z][a-z0-9.+-]*/[^\\s@?#]+(?:/[^\\s@?#]+)*(?:\\?[^\\s#]+)?(?:#[^\\s]+)?$",
+      "description": "Package URL without a version component."
+    },
+    "versionRange": {
+      "type": "string",
+      "pattern": "^vers:[a-z][a-z0-9.+-]*/\\S+$"
+    },
+    "skillPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*//)(?!.*\\\\)(?!.*\\/$).+$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "description": "Full SHA-1 or SHA-256 Git object identifier."
+    },
+    "jsonScalar": {
+      "type": [
+        "string",
+        "number",
+        "boolean"
+      ]
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "configuration": {
+          "type": "object",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/jsonScalar"
+          }
+        }
+      }
+    },
+    "createdWith": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "harness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/stableId"
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "model": {
+          "$ref": "#/$defs/model"
+        }
+      },
+      "minProperties": 1
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "url",
+        "path"
+      ],
+      "properties": {
+        "type": {
+          "const": "git"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1
+        },
+        "path": {
+          "$ref": "#/$defs/skillPath"
+        }
+      }
+    },
+    "universalTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "universal"
+        }
+      }
+    },
+    "harnessTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "const": "harness"
+        },
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "purl": {
+          "$ref": "#/$defs/purl"
+        },
+        "versionRange": {
+          "$ref": "#/$defs/versionRange"
+        },
+        "model": {
+          "$ref": "#/$defs/model"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "versionRange"
+            ]
+          },
+          "then": {
+            "properties": {
+              "purl": {
+                "$ref": "#/$defs/versionlessPurl"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "packageTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "purl"
+      ],
+      "properties": {
+        "kind": {
+          "const": "package"
+        },
+        "purl": {
+          "$ref": "#/$defs/purl"
+        },
+        "versionRange": {
+          "$ref": "#/$defs/versionRange"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "versionRange"
+            ]
+          },
+          "then": {
+            "properties": {
+              "purl": {
+                "$ref": "#/$defs/versionlessPurl"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "target": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/universalTarget"
+        },
+        {
+          "$ref": "#/$defs/harnessTarget"
+        },
+        {
+          "$ref": "#/$defs/packageTarget"
+        }
+      ]
+    },
+    "gitSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "url",
+        "commit"
+      ],
+      "properties": {
+        "type": {
+          "const": "git"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "$ref": "#/$defs/gitCommit"
+        }
+      }
+    },
+    "skillRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "source",
+        "paths"
+      ],
+      "properties": {
+        "kind": {
+          "const": "skill"
+        },
+        "source": {
+          "$ref": "#/$defs/gitSource"
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/skillPath"
+          }
+        }
+      }
+    },
+    "packageRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "purl"
+      ],
+      "properties": {
+        "kind": {
+          "const": "package"
+        },
+        "purl": {
+          "$ref": "#/$defs/purl"
+        },
+        "versionRange": {
+          "$ref": "#/$defs/versionRange"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "versionRange"
+            ]
+          },
+          "then": {
+            "properties": {
+              "purl": {
+                "$ref": "#/$defs/versionlessPurl"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "runtimeRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "const": "runtime"
+        },
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "versionRange": {
+          "$ref": "#/$defs/versionRange"
+        }
+      }
+    },
+    "commandRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "const": "command"
+        },
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "versionRange": {
+          "$ref": "#/$defs/versionRange"
+        }
+      }
+    },
+    "operatingSystemRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "const": "operating-system"
+        },
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "versionRange": {
+          "$ref": "#/$defs/versionRange"
+        }
+      }
+    },
+    "capabilityRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "const": "capability"
+        },
+        "id": {
+          "$ref": "#/$defs/stableId"
+        }
+      }
+    },
+    "requirement": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/skillRequirement"
+        },
+        {
+          "$ref": "#/$defs/packageRequirement"
+        },
+        {
+          "$ref": "#/$defs/runtimeRequirement"
+        },
+        {
+          "$ref": "#/$defs/commandRequirement"
+        },
+        {
+          "$ref": "#/$defs/operatingSystemRequirement"
+        },
+        {
+          "$ref": "#/$defs/capabilityRequirement"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "manifestSchema": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json",
+  "name": "openai-agents-project-audit",
+  "version": "1.0.0",
+  "license": "MIT",
+  "creators": [
+    "Person: Aya Hohner",
+    "Tool: codex-cli-0.146.0-alpha.9.2"
+  ],
+  "createdWith": {
+    "harness": {
+      "id": "openai/codex",
+      "version": "0.146.0-alpha.9.2"
+    },
+    "model": {
+      "id": "openai/gpt-5.6-sol",
+      "configuration": {
+        "reasoningEffort": "high"
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ayahohner/skillmeta.git",
+    "path": "examples/openai-agents-project-audit"
+  },
+  "targets": [
+    {
+      "kind": "package",
+      "purl": "pkg:pypi/openai-agents",
+      "versionRange": "vers:pypi/>=0.9.3"
+    }
+  ],
+  "requirements": [
+    {
+      "kind": "skill",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/dotnet/skills.git",
+        "tag": "v1.0.0",
+        "commit": "cb7c10bd32b250459632df9e6fa1350cdaf00b18"
+      },
+      "paths": [
+        "plugins/dotnet-test/skills/test-anti-patterns",
+        "plugins/dotnet-test/skills/coverage-analysis",
+        "plugins/dotnet-test/skills/crap-score"
+      ]
+    },
+    {
+      "kind": "skill",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/openai/openai-agents-python.git",
+        "tag": "v0.9.3",
+        "commit": "2fee7ede4bd1c1f4e65da110ce62b05375cd14af"
+      },
+      "paths": [
+        ".agents/skills/openai-knowledge"
+      ]
+    },
+    {
+      "kind": "runtime",
+      "id": "python",
+      "versionRange": "vers:semver/>=3.10.0"
+    },
+    {
+      "kind": "package",
+      "purl": "pkg:pypi/pytest",
+      "versionRange": "vers:pypi/>=8.0.0"
+    }
+  ]
+}
