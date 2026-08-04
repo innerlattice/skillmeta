@@ -13,7 +13,7 @@ from yaml import YAMLError
 
 MANIFEST_KEY = "skillmeta.manifest"
 MANIFEST_SCHEMA_URI = (
-    "https://raw.githubusercontent.com/ayahohner/skillmeta/"
+    "https://raw.githubusercontent.com/innerlattice/skillmeta/"
     "v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
 )
 REDUNDANT_FRONTMATTER_FIELDS = {

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json",
+  "$id": "https://raw.githubusercontent.com/innerlattice/skillmeta/v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json",
   "title": "Skillmeta skill manifest",
   "description": "Portable machine-readable metadata for an Agent Skill.",
   "type": "object",
@@ -16,7 +16,7 @@
   ],
   "properties": {
     "manifestSchema": {
-      "const": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
+      "const": "https://raw.githubusercontent.com/innerlattice/skillmeta/v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
     },
     "name": {
       "$ref": "#/$defs/skillName"
