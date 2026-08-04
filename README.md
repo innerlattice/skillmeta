@@ -1,6 +1,7 @@
 # Skillmeta
 
 [![Validate](https://github.com/innerlattice/skillmeta/actions/workflows/validate.yml/badge.svg)](https://github.com/innerlattice/skillmeta/actions/workflows/validate.yml)
+[![PyPI](https://img.shields.io/pypi/v/skillmeta.svg)](https://pypi.org/project/skillmeta/)
 [![Spec v0.3.0](https://img.shields.io/badge/spec-v0.3.0-7c3aed)](SPECIFICATION.md)
 [![Agent Skills profile](https://img.shields.io/badge/Agent%20Skills-profile-0ea5e9)](https://agentskills.io/specification)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
