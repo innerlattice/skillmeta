@@ -1,0 +1,42 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/skillmeta/
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Verify release version
+        run: |
+          python - <<'PY'
+          import os
+          import tomllib
+
+          with open("pyproject.toml", "rb") as project_file:
+              version = tomllib.load(project_file)["project"]["version"]
+          tag_version = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+          if version != tag_version:
+              raise SystemExit(
+                  f"release tag {tag_version!r} does not match package version {version!r}"
+              )
+          PY
+      - run: python -m pip install "build>=1.2,<2"
+      - run: python -m build
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
