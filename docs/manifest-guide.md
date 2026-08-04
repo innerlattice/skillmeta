@@ -474,15 +474,20 @@ semantics for it.
 Install the reference validator and check a skill directory:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install "git+https://github.com/ayahohner/skillmeta.git@v0.3.0"
-.venv/bin/skillmeta validate ./example-skill --warnings-as-errors
+python3 -m pip install skillmeta
+skillmeta validate ./example-skill --warnings-as-errors
 ```
 
 The validator checks the local manifest link, canonical name and directory,
 frontmatter consistency, schema structure, and redundant frontmatter fields.
 It does not resolve remote tags, fetch dependencies, install packages, or run
 declared executables.
+
+`validate` accepts one or more skill directories or `SKILL.md` paths. Use
+`--recursive` to discover skills below a repository root, `--format json` for
+machine-readable results, and `--warnings-as-errors` to make warnings fail the
+command. Text and JSON diagnostics include stable codes intended for tools to
+consume.
 
 ### Migrate from v0.2
 

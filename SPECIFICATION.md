@@ -1,7 +1,6 @@
 # Skillmeta Specification
 
 - Version: `0.3.0`
-- Status: Experimental
 - Profile of: [Agent Skills](https://agentskills.io/specification)
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT**,

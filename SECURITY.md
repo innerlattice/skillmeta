@@ -7,8 +7,7 @@ instructions.
 Report suspected vulnerabilities privately through GitHub's security advisory
 workflow for this repository.
 
-Version `0.2.x` receives security fixes while it is the current experimental
-line. There is no guarantee of backward compatibility before `1.0.0`.
+Version `0.3.x` receives security fixes.
 
 Consumers should:
 

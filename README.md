@@ -3,7 +3,6 @@
 [![Validate](https://github.com/ayahohner/skillmeta/actions/workflows/validate.yml/badge.svg)](https://github.com/ayahohner/skillmeta/actions/workflows/validate.yml)
 [![Spec v0.3.0](https://img.shields.io/badge/spec-v0.3.0-7c3aed)](SPECIFICATION.md)
 [![Agent Skills profile](https://img.shields.io/badge/Agent%20Skills-profile-0ea5e9)](https://agentskills.io/specification)
-[![Status: experimental](https://img.shields.io/badge/status-experimental-f59e0b)](#status-and-scope)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
 
 **Portable, structured metadata for Agent Skills—without bloating
@@ -27,7 +26,7 @@ no registry or particular agent harness is required.
 - [Complete manifest guide](docs/manifest-guide.md)
 - [Agent quickstart](#agent-quickstart)
 - [Migration](#migration)
-- [Status and scope](#status-and-scope)
+- [Scope](#scope)
 
 ## Why Skillmeta?
 
@@ -178,14 +177,25 @@ For a larger working example, see
 The reference CLI requires Python 3.10 or newer:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install "git+https://github.com/ayahohner/skillmeta.git@v0.3.0"
-.venv/bin/skillmeta validate ./agent-project-audit --warnings-as-errors
+python3 -m pip install skillmeta
+skillmeta validate ./agent-project-audit --warnings-as-errors
 ```
 
 The validator checks the local link, canonical name, cross-file consistency,
 redundant frontmatter metadata, and the JSON Schema. It does not fetch or
 install declared dependencies.
+
+Validate several skills at once, scan a repository, or emit structured output:
+
+```bash
+skillmeta validate ./skills/one ./skills/two
+skillmeta validate . --recursive
+skillmeta validate . --recursive --format json
+```
+
+Diagnostics have stable codes so integrations do not need to parse message
+text. The JSON result includes per-skill issues, aggregate counts, structural
+validity, and whether the invocation passed its warning policy.
 
 ## Targets and dependencies
 
@@ -268,10 +278,10 @@ shows the v0.2-to-v0.3 transformation.
 Published v0.1 and v0.2 manifests remain valid against their immutable
 schemas, and the current validator recognizes both versions.
 
-## Status and scope
+## Scope
 
-Skillmeta v0.3.0 is experimental. It is a companion profile, not part of the
-canonical Agent Skills specification.
+Skillmeta is a companion profile, not part of the canonical Agent Skills
+specification.
 
 The project defines a manifest and a Python reference validator. It does not
 define a registry, installer, dependency solver, lockfile, permission system,
@@ -281,7 +291,9 @@ being prescribed by it.
 Read the [manifest guide](docs/manifest-guide.md), consult the normative
 [specification](SPECIFICATION.md), inspect the
 [v0.3 JSON Schema](src/skillmeta/schema/v0.3/skill.schema.json), or see
-[CONTRIBUTING.md](CONTRIBUTING.md) to help refine the format.
+[CONTRIBUTING.md](CONTRIBUTING.md) to help refine the format. Project history
+is recorded in the [changelog](CHANGELOG.md), and planned work is kept in the
+[roadmap](ROADMAP.md).
 
 ## License
 
