@@ -33,7 +33,7 @@ The referenced `skill.json` contains the detailed profile:
 
 ```json
 {
-  "manifestSchema": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json",
+  "manifestSchema": "https://raw.githubusercontent.com/innerlattice/skillmeta/v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json",
   "name": "example-skill",
   "version": "1.0.0",
   "license": "MIT",

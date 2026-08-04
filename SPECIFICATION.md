@@ -70,7 +70,7 @@ values are strings.
 A manifest MUST be UTF-8 JSON and MUST validate against:
 
 ```text
-https://raw.githubusercontent.com/ayahohner/skillmeta/v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json
+https://raw.githubusercontent.com/innerlattice/skillmeta/v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json
 ```
 
 The manifest uses `manifestSchema` rather than JSON Schema's `$schema`
