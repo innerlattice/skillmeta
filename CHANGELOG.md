@@ -20,6 +20,7 @@ reference tooling.
 
 - Creator affiliations and creation contexts are attached to the creator they
   describe.
+- Immutable schema tags are separate from reference-tool release tags.
 - Project ownership moved to `innerlattice/skillmeta`.
 
 ## 0.2.0 - 2026-07-31

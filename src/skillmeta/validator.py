@@ -14,16 +14,16 @@ from yaml import YAMLError
 MANIFEST_KEY = "skillmeta.manifest"
 MANIFEST_SCHEMA_URI = (
     "https://raw.githubusercontent.com/innerlattice/skillmeta/"
-    "v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json"
+    "schema-v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json"
 )
 MANIFEST_SCHEMA_URIS = {
     (
         "https://raw.githubusercontent.com/innerlattice/skillmeta/"
-        "v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json"
+        "schema-v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json"
     ): "v0.1",
     (
         "https://raw.githubusercontent.com/innerlattice/skillmeta/"
-        "v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
+        "schema-v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
     ): "v0.2",
     MANIFEST_SCHEMA_URI: "v0.3",
 }

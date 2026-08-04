@@ -29,6 +29,7 @@ python3 -m venv .venv
 The manifest format version appears in `SPECIFICATION.md` and its schema URI.
 The reference tool version is reported by `skillmeta --version`. They may
 advance independently: tooling changes do not require a new schema version.
+Immutable schema tags use `schema-vX.Y.Z`; tool release tags use `vX.Y.Z`.
 
 Create a GitHub release for each published tool version. The release workflow
 builds and publishes the matching Python package through PyPI Trusted

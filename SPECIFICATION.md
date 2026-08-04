@@ -80,7 +80,7 @@ Skillmeta adds no other frontmatter requirements. In particular, the upstream
 A v0.3 manifest MUST be UTF-8 JSON and MUST validate against:
 
 ```text
-https://raw.githubusercontent.com/innerlattice/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json
+https://raw.githubusercontent.com/innerlattice/skillmeta/schema-v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json
 ```
 
 The `version` field identifies the subject skill release and MUST follow

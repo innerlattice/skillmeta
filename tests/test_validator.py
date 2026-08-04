@@ -442,11 +442,11 @@ def test_validator_accepts_published_v01_and_v02_schemas(tmp_path: Path) -> None
     schema_uris = {
         "v01": (
             "https://raw.githubusercontent.com/innerlattice/skillmeta/"
-            "v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json"
+            "schema-v0.1.0/src/skillmeta/schema/v0.1/skill.schema.json"
         ),
         "v02": (
             "https://raw.githubusercontent.com/innerlattice/skillmeta/"
-            "v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
+            "schema-v0.2.0/src/skillmeta/schema/v0.2/skill.schema.json"
         ),
     }
 

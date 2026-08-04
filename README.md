@@ -104,7 +104,7 @@ Create `skill.json` beside `SKILL.md`:
 
 ```json
 {
-  "manifestSchema": "https://raw.githubusercontent.com/innerlattice/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json",
+  "manifestSchema": "https://raw.githubusercontent.com/innerlattice/skillmeta/schema-v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json",
   "name": "agent-project-audit",
   "version": "1.0.0",
   "license": "MIT",
