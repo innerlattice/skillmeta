@@ -44,17 +44,19 @@ SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 @dataclass(frozen=True)
 class Issue:
+    code: str
     severity: Literal["error", "warning"]
     location: str
     message: str
 
 
 def _issue(
+    code: str,
     severity: Literal["error", "warning"],
     location: str,
     message: str,
 ) -> Issue:
-    return Issue(severity=severity, location=location, message=message)
+    return Issue(code=code, severity=severity, location=location, message=message)
 
 
 def _schema(manifest_schema: str) -> dict[str, Any]:
@@ -79,12 +81,24 @@ def _parse_frontmatter(skill_file: Path) -> tuple[dict[str, Any] | None, list[Is
     try:
         text = skill_file.read_text(encoding="utf-8")
     except OSError as exc:
-        return None, [_issue("error", str(skill_file), f"cannot read SKILL.md: {exc}")]
+        return None, [
+            _issue(
+                "frontmatter.read_failed",
+                "error",
+                str(skill_file),
+                f"cannot read SKILL.md: {exc}",
+            )
+        ]
 
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
         return None, [
-            _issue("error", str(skill_file), "SKILL.md must begin with YAML frontmatter")
+            _issue(
+                "frontmatter.missing",
+                "error",
+                str(skill_file),
+                "SKILL.md must begin with YAML frontmatter",
+            )
         ]
 
     closing_index = next(
@@ -93,19 +107,34 @@ def _parse_frontmatter(skill_file: Path) -> tuple[dict[str, Any] | None, list[Is
     )
     if closing_index is None:
         return None, [
-            _issue("error", str(skill_file), "SKILL.md frontmatter has no closing delimiter")
+            _issue(
+                "frontmatter.unclosed",
+                "error",
+                str(skill_file),
+                "SKILL.md frontmatter has no closing delimiter",
+            )
         ]
 
     try:
         frontmatter = yaml.safe_load("\n".join(lines[1:closing_index]))
     except YAMLError as exc:
         return None, [
-            _issue("error", str(skill_file), f"invalid YAML frontmatter: {exc}")
+            _issue(
+                "frontmatter.invalid_yaml",
+                "error",
+                str(skill_file),
+                f"invalid YAML frontmatter: {exc}",
+            )
         ]
 
     if not isinstance(frontmatter, dict):
         return None, [
-            _issue("error", str(skill_file), "frontmatter must be a YAML mapping")
+            _issue(
+                "frontmatter.not_mapping",
+                "error",
+                str(skill_file),
+                "frontmatter must be a YAML mapping",
+            )
         ]
     return frontmatter, issues
 
@@ -120,6 +149,7 @@ def _validate_frontmatter(
     for field in sorted(frontmatter.keys() & REDUNDANT_FRONTMATTER_FIELDS):
         issues.append(
             _issue(
+                "frontmatter.redundant",
                 "warning",
                 f"{skill_file}:{field}",
                 f"{field} duplicates metadata owned by skill.json",
@@ -130,6 +160,7 @@ def _validate_frontmatter(
     if not isinstance(name, str) or not SKILL_NAME_PATTERN.fullmatch(name):
         issues.append(
             _issue(
+                "frontmatter.name.invalid",
                 "error",
                 f"{skill_file}:name",
                 "name must contain lowercase letters, numbers, and single hyphens",
@@ -137,11 +168,17 @@ def _validate_frontmatter(
         )
     elif len(name) > 64:
         issues.append(
-            _issue("error", f"{skill_file}:name", "name must be at most 64 characters")
+            _issue(
+                "frontmatter.name.too_long",
+                "error",
+                f"{skill_file}:name",
+                "name must be at most 64 characters",
+            )
         )
     elif name != skill_dir.name:
         issues.append(
             _issue(
+                "frontmatter.name.directory_mismatch",
                 "error",
                 f"{skill_file}:name",
                 f"name {name!r} must match parent directory {skill_dir.name!r}",
@@ -154,6 +191,7 @@ def _validate_frontmatter(
     ):
         issues.append(
             _issue(
+                "frontmatter.license.invalid",
                 "error",
                 f"{skill_file}:license",
                 "license must be a non-empty string when declared",
@@ -163,13 +201,19 @@ def _validate_frontmatter(
     metadata = frontmatter.get("metadata")
     if not isinstance(metadata, dict):
         issues.append(
-            _issue("error", f"{skill_file}:metadata", "metadata must be a mapping")
+            _issue(
+                "frontmatter.metadata.invalid",
+                "error",
+                f"{skill_file}:metadata",
+                "metadata must be a mapping",
+            )
         )
         return issues
 
     for field in sorted(metadata.keys() & REDUNDANT_FRONTMATTER_FIELDS):
         issues.append(
             _issue(
+                "frontmatter.redundant",
                 "warning",
                 f"{skill_file}:metadata.{field}",
                 f"metadata.{field} duplicates metadata owned by skill.json",
@@ -180,6 +224,7 @@ def _validate_frontmatter(
     if not isinstance(manifest_reference, str) or not manifest_reference.strip():
         issues.append(
             _issue(
+                "frontmatter.manifest.missing",
                 "error",
                 f"{skill_file}:metadata.{MANIFEST_KEY}",
                 f"metadata must contain the string key {MANIFEST_KEY!r}",
@@ -203,27 +248,52 @@ def _manifest_path(
     location = f"{skill_dir / 'SKILL.md'}:metadata.{MANIFEST_KEY}"
     if reference_path.is_absolute() or "://" in reference:
         return None, [
-            _issue("error", location, "manifest reference must be a local relative path")
+            _issue(
+                "frontmatter.manifest.external",
+                "error",
+                location,
+                "manifest reference must be a local relative path",
+            )
         ]
     if reference_path.suffix.lower() != ".json":
         return None, [
-            _issue("error", location, "manifest reference must identify a JSON file")
+            _issue(
+                "frontmatter.manifest.not_json",
+                "error",
+                location,
+                "manifest reference must identify a JSON file",
+            )
         ]
 
     skill_root = skill_dir.resolve()
     resolved = (skill_root / reference_path).resolve()
     if not resolved.is_relative_to(skill_root):
         return None, [
-            _issue("error", location, "manifest reference must not escape the skill root")
+            _issue(
+                "frontmatter.manifest.outside_root",
+                "error",
+                location,
+                "manifest reference must not escape the skill root",
+            )
         ]
     if not resolved.is_file():
         return None, [
-            _issue("error", location, f"manifest does not exist: {reference}")
+            _issue(
+                "frontmatter.manifest.not_found",
+                "error",
+                location,
+                f"manifest does not exist: {reference}",
+            )
         ]
     issues: list[Issue] = []
     if reference_path.name != "skill.json":
         issues.append(
-            _issue("warning", location, "manifest should be named skill.json")
+            _issue(
+                "frontmatter.manifest.nonstandard_name",
+                "warning",
+                location,
+                "manifest should be named skill.json",
+            )
         )
     return resolved, issues
 
@@ -233,11 +303,17 @@ def _load_manifest(manifest_path: Path) -> tuple[dict[str, Any] | None, list[Iss
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except OSError as exc:
         return None, [
-            _issue("error", str(manifest_path), f"cannot read manifest: {exc}")
+            _issue(
+                "manifest.read_failed",
+                "error",
+                str(manifest_path),
+                f"cannot read manifest: {exc}",
+            )
         ]
     except json.JSONDecodeError as exc:
         return None, [
             _issue(
+                "manifest.invalid_json",
                 "error",
                 str(manifest_path),
                 f"invalid JSON at line {exc.lineno}, column {exc.colno}: {exc.msg}",
@@ -245,7 +321,12 @@ def _load_manifest(manifest_path: Path) -> tuple[dict[str, Any] | None, list[Iss
         ]
     if not isinstance(manifest, dict):
         return None, [
-            _issue("error", str(manifest_path), "manifest must be a JSON object")
+            _issue(
+                "manifest.not_object",
+                "error",
+                str(manifest_path),
+                "manifest must be a JSON object",
+            )
         ]
     return manifest, []
 
@@ -263,6 +344,7 @@ def _validate_manifest(
     if manifest_schema not in MANIFEST_SCHEMA_URIS:
         return [
             _issue(
+                "manifest.schema.unsupported",
                 "error",
                 f"{manifest_path}.manifestSchema",
                 f"unsupported manifestSchema: {manifest_schema!r}",
@@ -276,6 +358,7 @@ def _validate_manifest(
     errors = sorted(validator.iter_errors(manifest), key=lambda error: list(error.absolute_path))
     return [
         _issue(
+            "manifest.schema.invalid",
             "error",
             _json_location(manifest_path, list(error.absolute_path)),
             error.message,
@@ -295,6 +378,7 @@ def _validate_cross_file(
     if manifest.get("name") != frontmatter_name:
         issues.append(
             _issue(
+                "manifest.name.mismatch",
                 "error",
                 f"{manifest_path}.name",
                 f"name must match SKILL.md ({frontmatter_name!r})",
@@ -309,6 +393,7 @@ def _validate_cross_file(
     ):
         issues.append(
             _issue(
+                "manifest.license.mismatch",
                 "error",
                 f"{manifest_path}.license",
                 f"license must match SKILL.md ({frontmatter_license!r})",
@@ -334,6 +419,7 @@ def _validate_cross_file(
             if value != manifest_version:
                 issues.append(
                     _issue(
+                        "manifest.version.mismatch",
                         "error",
                         location,
                         f"version must match skill.json ({manifest_version!r})",
@@ -346,9 +432,23 @@ def validate_skill(path: str | Path) -> list[Issue]:
     skill_dir = _skill_directory(path)
     skill_file = skill_dir / "SKILL.md"
     if not skill_dir.is_dir():
-        return [_issue("error", str(skill_dir), "skill directory does not exist")]
+        return [
+            _issue(
+                "skill.directory.not_found",
+                "error",
+                str(skill_dir),
+                "skill directory does not exist",
+            )
+        ]
     if not skill_file.is_file():
-        return [_issue("error", str(skill_file), "SKILL.md does not exist")]
+        return [
+            _issue(
+                "skill.file.not_found",
+                "error",
+                str(skill_file),
+                "SKILL.md does not exist",
+            )
+        ]
 
     frontmatter, issues = _parse_frontmatter(skill_file)
     if frontmatter is None:
