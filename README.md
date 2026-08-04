@@ -1,6 +1,6 @@
 # Skillmeta
 
-[![Validate](https://github.com/ayahohner/skillmeta/actions/workflows/validate.yml/badge.svg)](https://github.com/ayahohner/skillmeta/actions/workflows/validate.yml)
+[![Validate](https://github.com/innerlattice/skillmeta/actions/workflows/validate.yml/badge.svg)](https://github.com/innerlattice/skillmeta/actions/workflows/validate.yml)
 [![Spec v0.3.0](https://img.shields.io/badge/spec-v0.3.0-7c3aed)](SPECIFICATION.md)
 [![Agent Skills profile](https://img.shields.io/badge/Agent%20Skills-profile-0ea5e9)](https://agentskills.io/specification)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
@@ -104,7 +104,7 @@ Create `skill.json` beside `SKILL.md`:
 
 ```json
 {
-  "manifestSchema": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json",
+  "manifestSchema": "https://raw.githubusercontent.com/innerlattice/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json",
   "name": "agent-project-audit",
   "version": "1.0.0",
   "license": "MIT",

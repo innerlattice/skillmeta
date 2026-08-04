@@ -29,7 +29,7 @@ A minimal universal manifest looks like this:
 
 ```json
 {
-  "manifestSchema": "https://raw.githubusercontent.com/ayahohner/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json",
+  "manifestSchema": "https://raw.githubusercontent.com/innerlattice/skillmeta/v0.3.0/src/skillmeta/schema/v0.3/skill.schema.json",
   "name": "example-skill",
   "version": "1.0.0",
   "license": "MIT",

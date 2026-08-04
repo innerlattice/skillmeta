@@ -33,9 +33,9 @@ dev = [
 skillmeta = "skillmeta.cli:main"
 
 [project.urls]
-Repository = "https://github.com/ayahohner/skillmeta"
-Documentation = "https://github.com/ayahohner/skillmeta/blob/main/docs/manifest-guide.md"
-Specification = "https://github.com/ayahohner/skillmeta/blob/main/SPECIFICATION.md"
+Repository = "https://github.com/innerlattice/skillmeta"
+Documentation = "https://github.com/innerlattice/skillmeta/blob/main/docs/manifest-guide.md"
+Specification = "https://github.com/innerlattice/skillmeta/blob/main/SPECIFICATION.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/skillmeta"]
